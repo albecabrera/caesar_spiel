@@ -183,7 +183,44 @@
 /* ─── QUIZ DATA ─────────────────────────────────────────────────────── */
 const QUESTIONS = [
   {
-    num: 'FRAGE 01 / 02',
+    num: 'FRAGE 01 / 05',
+    text: 'Worum geht es bei der Caesar-Verschlüsselung?',
+    sub: 'Wähle die richtige Erklärung.',
+    cipher: null,
+    options: [
+      'Jeder Buchstabe wird durch ein zufälliges Symbol ersetzt.',
+      'Jeder Buchstabe wird im Alphabet um eine feste Anzahl Stellen verschoben.',
+      'Wörter werden rückwärts geschrieben.',
+      'Nur Konsonanten werden verschlüsselt.'
+    ],
+    correct: 1,
+    feedback: 'Genau! Bei der Caesar-Verschlüsselung wird jeder Buchstabe um einen festen Schlüsselwert im Alphabet verschoben.'
+  },
+  {
+    num: 'FRAGE 02 / 05',
+    text: 'Was ist der Unterschied zwischen echtem und geheimem Alphabet?',
+    sub: 'Wähle die beste Beschreibung.',
+    cipher: null,
+    options: [
+      'Das echte Alphabet hat mehr Buchstaben als das geheime.',
+      'Das echte Alphabet ist der Klartext (A–Z normal), das geheime Alphabet ist das verschobene Alphabet nach dem Schlüssel.',
+      'Das geheime Alphabet besteht nur aus Zahlen.',
+      'Es gibt keinen Unterschied – beide sind identisch.'
+    ],
+    correct: 1,
+    feedback: 'Richtig! Das echte (Normal-)Alphabet zeigt die Original-Buchstaben, das geheime (verschobene) Alphabet zeigt die verschlüsselten Buchstaben.'
+  },
+  {
+    num: 'FRAGE 03 / 05',
+    text: 'Welche Verschlüsselungsmethode basiert auf einer Alphabet-Verschiebung?',
+    sub: 'Welche berühmte Methode funktioniert so, dass das Alphabet um eine beliebige Anzahl von Stellen verschoben wird?',
+    cipher: null,
+    options: ['Morse-Code', 'RSA-Verschlüsselung', 'Caesar-Verschlüsselung', 'Binärcode'],
+    correct: 2,
+    feedback: 'Korrekt! Die Caesar-Verschlüsselung, benannt nach Julius Caesar, basiert genau auf diesem Prinzip der Alphabet-Verschiebung.'
+  },
+  {
+    num: 'FRAGE 04 / 05',
     text: 'Welches Klartext-Wort ergibt sich?',
     sub: 'Schlüssel: <strong>K = 3</strong> · Verschiebe jeden Buchstaben 3 Stellen zurück.',
     cipher: 'KHOOR',
@@ -192,7 +229,7 @@ const QUESTIONS = [
     feedback: 'Richtig! K→H, H→E, O→L, O→L, R→O ergibt HELLO.'
   },
   {
-    num: 'FRAGE 02 / 02',
+    num: 'FRAGE 05 / 05',
     text: 'Welchen Schlüssel hat Caesar benutzt?',
     sub: 'Original: <strong>GEHEIM</strong> → Geheimtext: <strong>NLORPT</strong> · Wie groß ist die Verschiebung?',
     cipher: null,
