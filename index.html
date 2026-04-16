@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geheimcode-Akademie · Caesar-Verschlüsselung</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e1117;
+    --surface: #161b25;
+    --surface2: #1e2636;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --text: #e8eaf0;
+    --text2: #8b92a8;
+    --text3: #5a6278;
+    --accent: #4f9cf9;
+    --accent-dim: rgba(79,156,249,0.12);
+    --green: #3ecf8e;
+    --green-dim: rgba(62,207,142,0.12);
+    --red: #f76060;
+    --red-dim: rgba(247,96,96,0.12);
+    --amber: #f5a623;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .container { width: 100%; max-width: 620px; }
+
+  .site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+
+  .logo-text { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 0.05em; }
+  .school-badge { font-size: 11px; color: var(--text3); letter-spacing: 0.04em; }
+
+  .progress-bar { display: flex; gap: 5px; margin-bottom: 1.75rem; }
+  .seg { flex: 1; height: 3px; border-radius: 2px; background: var(--surface2); transition: background 0.4s; }
+  .seg.done { background: var(--green); }
+  .seg.current { background: var(--accent); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+
+  .task-num { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+  .task-title { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 10px; line-height: 1.4; }
+  .task-intro { font-size: 14px; color: var(--text2); line-height: 1.65; margin-bottom: 1.25rem; }
+  .task-intro strong { color: var(--amber); font-weight: 600; }
+
+  .cipher-display {
+    font-family: var(--mono); font-size: 26px; font-weight: 700; letter-spacing: 0.25em;
+    color: var(--text); background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 1.25rem;
+  }
+
+  .key-pair { display: flex; gap: 16px; justify-content: center; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .key-pair-box { text-align: center; }
+  .key-pair-label { font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+  .key-pair-val { font-family: var(--mono); font-size: 22px; font-weight: 700; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 12px 20px; letter-spacing: 0.2em; }
+  .key-pair-arrow { font-size: 22px; color: var(--text3); }
+
+  .hint-panel {
+    background: rgba(79,156,249,0.07); border: 1px solid rgba(79,156,249,0.2);
+    border-radius: 10px; padding: 14px; font-size: 13px; color: var(--text2);
+    line-height: 1.6; margin-bottom: 1.25rem; display: none;
+  }
+  .hint-panel.visible { display: block; }
+
+  .alpha-table { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  .alpha-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .alpha-cell span { font-family: var(--mono); font-size: 10px; width: 20px; text-align: center; border-radius: 4px; padding: 1px 0; }
+  .ac-enc { background: rgba(79,156,249,0.15); color: var(--accent); }
+  .ac-plain { color: var(--text3); }
+
+  .answer-input {
+    width: 100%; font-family: var(--mono); font-size: 18px; font-weight: 700;
+    letter-spacing: 0.1em; padding: 14px 16px; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 10px; color: var(--text);
+    outline: none; transition: border-color 0.2s, background 0.2s;
+    text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .answer-input::placeholder { color: var(--text3); font-size: 14px; letter-spacing: 0.03em; }
+  .answer-input:focus { border-color: var(--accent); background: rgba(79,156,249,0.06); }
+  .answer-input.correct { border-color: var(--green); background: var(--green-dim); color: var(--green); }
+  .answer-input.wrong { border-color: var(--red); background: var(--red-dim); color: var(--red); }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 20px; border-radius: 8px; font-family: var(--sans); font-size: 14px;
+    font-weight: 500; cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text2);
+    transition: background 0.15s, color 0.15s, transform 0.1s;
+  }
+  .btn:hover { background: var(--border2); color: var(--text); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #3a88e8; }
+
+  .feedback { border-radius: 10px; padding: 14px 16px; font-size: 14px; font-weight: 500; line-height: 1.5; margin-top: 1rem; display: none; }
+  .feedback.success { display: block; background: var(--green-dim); border: 1px solid rgba(62,207,142,0.3); color: var(--green); }
+  .feedback.error { display: block; background: var(--red-dim); border: 1px solid rgba(247,96,96,0.25); color: var(--red); }
+
+  .tool-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; }
+  input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; background: var(--surface2); border-radius: 2px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+  .slider-val { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent); min-width: 28px; text-align: center; }
+  .encoded-out {
+    font-family: var(--mono); font-size: 22px; font-weight: 700; letter-spacing: 0.2em;
+    text-align: center; background: var(--surface2); border: 1px dashed var(--border2);
+    border-radius: 10px; padding: 14px; color: var(--amber); min-height: 56px; margin-bottom: 1rem;
+  }
+
+  .result-screen { text-align: center; padding: 1rem 0; }
+  .result-icon { font-size: 56px; margin-bottom: 0.75rem; }
+  .result-score { font-family: var(--mono); font-size: 52px; font-weight: 700; color: var(--accent); }
+  .result-sub { font-size: 13px; color: var(--text3); margin-bottom: 1.25rem; }
+  .result-verdict { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .result-verdict.great { color: var(--green); }
+  .result-verdict.keep { color: var(--amber); }
+  .result-desc { font-size: 14px; color: var(--text2); margin-bottom: 1.75rem; line-height: 1.6; }
+  .result-list { text-align: left; margin-bottom: 1.75rem; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .result-row:last-child { border-bottom: none; }
+  .result-row span:first-child { color: var(--text2); }
+  .ok { color: var(--green); font-weight: 600; }
+  .nok { color: var(--red); font-weight: 600; }
+
+  .share-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: left; margin-top: 1rem; }
+  .share-label { font-size: 11px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+  .share-url { font-family: var(--mono); font-size: 13px; color: var(--accent); background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 14px; cursor: pointer; display: block; margin-bottom: 6px; word-break: break-all; transition: background 0.15s; }
+  .share-url:hover { background: rgba(79,156,249,0.08); }
+  .copy-hint { font-size: 12px; color: var(--text3); height: 18px; }
+  .copy-hint.show { color: var(--green); }
+  .qr-wrap { background: #fff; padding: 8px; border-radius: 10px; display: inline-block; box-shadow: 0 0 0 1px rgba(255,255,255,0.08); }
+  .qr-wrap img, .qr-wrap canvas { display: block; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="site-header">
+    <div class="logo-text">🔐 GEHEIMCODE-AKADEMIE</div>
+    <div class="school-badge">ESG Bonn · WP Informatik · Klasse 7</div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+const TASKS = [
+  {
+    type: 'decode', num: 'AUFGABE 01 / 05', title: 'Geheimtext entschlüsseln',
+    intro: 'Julius Caesar hat eine Nachricht mit dem Schlüssel <strong>K = 3</strong> verschlüsselt. Jeder Buchstabe wurde um 3 Stellen nach rechts verschoben. Entschlüssle die Nachricht!',
+    cipher: 'KHOOR', key: 3, answer: 'HELLO',
+    hint: 'Verschiebe jeden Buchstaben um 3 Stellen zurück im Alphabet. K → H, H → E, O → L, O → L, R → O'
+  },
+  {
+    type: 'decode', num: 'AUFGABE 02 / 05', title: 'Geheimcode knacken',
+    intro: 'Diese Nachricht wurde mit dem Schlüssel <strong>K = 5</strong> verschlüsselt. Finde den Originaltext!',
+    cipher: 'WNSLJ', key: 5, answer: 'RIVAL',
+    hint: 'Buchstaben 5 Stellen zurückverschieben: W(22)−5=R(17), N(13)−5=I(8), S(18)−5=N(13) …'
+  },
+  {
+    type: 'encode', num: 'AUFGABE 03 / 05', title: 'Nachricht verschlüsseln',
+    intro: 'Jetzt bist du der Spion! Verschlüssle das Wort mit dem Schlüssel <strong>K = 4</strong>. Verschiebe jeden Buchstaben um 4 nach rechts.',
+    cipher: 'INFO', key: 4, answer: 'MRJS',
+    hint: 'I(8)+4=M(12), N(13)+4=R(17), F(5)+4=J(9), O(14)+4=S(18) → MRJS'
+  },
+  {
+    type: 'key', num: 'AUFGABE 04 / 05', title: 'Schlüssel ermitteln',
+    intro: 'Original und verschlüsselter Text sind bekannt. Welchen Schlüssel hat Caesar benutzt? Gib nur die Zahl ein.',
+    plain: 'GEHEIM', cipher: 'NLORPT', answer: '7',
+    hint: 'Vergleiche G→N: G ist der 7. Buchstabe, N ist der 14. Buchstabe. 14 − 7 = 7.'
+  },
+  {
+    type: 'tool', num: 'AUFGABE 05 / 05', title: 'Eigene Nachricht senden',
+    intro: 'Benutze das Verschlüsselungs-Rad! Wähle einen Schlüssel, gib ein Wort ein, und trage den verschlüsselten Text unten ein.',
+    cipher: null, key: null, answer: null,
+    hint: 'Es gibt keine falsche Antwort – solange dein eingegebener Code mit dem angezeigten Code übereinstimmt!'
+  }
+];
+
+function shift(text, k) {
+  return text.toUpperCase().split('').map(c => {
+    const i = ALPHA.indexOf(c);
+    return i >= 0 ? ALPHA[(i + k + 26) % 26] : c;
+  }).join('');
+}
+
+let current = 0, scores = [], answered = false, inputVal = '';
+let showHint = false, toolWord = '', toolKey = 3;
+
+function alphaTable(key, type) {
+  return ALPHA.split('').map((c, i) => {
+    const enc = ALPHA[(i + key) % 26];
+    const top = type === 'decode' ? enc : c;
+    const bot = type === 'decode' ? c : enc;
+    return `<div class="alpha-cell"><span class="ac-enc">${top}</span><span class="ac-plain">${bot}</span></div>`;
+  }).join('');
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (current >= TASKS.length) { renderResult(); return; }
+  const task = TASKS[current];
+  const correct = scores[current] === true;
+  const wrong = scores[current] === false;
+  let body = '';
+
+  if (task.type === 'tool') {
+    const enc = shift(toolWord.replace(/[^A-Za-z]/g,'') || '', toolKey);
+    body = `
+      <div style="margin-bottom:1rem">
+        <div class="tool-label">Schlüssel wählen</div>
+        <div class="slider-row">
+          <input type="range" min="1" max="25" value="${toolKey}" id="kSlider">
+          <span class="slider-val" id="kVal">${toolKey}</span>
+        </div>
+      </div>
+      <div style="margin-bottom:1rem">
+        <div class="tool-label">Dein Wort (Klartext)</div>
+        <input class="answer-input" style="margin-bottom:0" type="text" id="toolWord" placeholder="Wort eingeben …" value="${toolWord}" maxlength="12">
+      </div>
+      <div class="tool-label">Verschlüsselter Text:</div>
+      <div class="encoded-out" id="encOut">${enc || '—'}</div>
+      <div class="tool-label">Trage den Code hier ein:</div>
+      <input class="answer-input ${correct?'correct':wrong?'wrong':''}" type="text" id="toolAns" placeholder="Dein Code …" value="${inputVal}" maxlength="12">`;
+  } else {
+    const cipherHtml = task.type === 'key'
+      ? `<div class="key-pair">
+           <div class="key-pair-box"><div class="key-pair-label">Klartext</div><div class="key-pair-val">${task.plain}</div></div>
+           <div class="key-pair-arrow">→</div>
+           <div class="key-pair-box"><div class="key-pair-label">Geheimtext</div><div class="key-pair-val">${task.cipher}</div></div>
+         </div>`
+      : `<div class="cipher-display">${task.cipher}</div>`;
+    body = `
+      ${cipherHtml}
+      <div class="hint-panel ${showHint?'visible':''}">
+        💡 <strong>Tipp:</strong> ${task.hint}
+        ${task.type!=='key'?`<div class="alpha-table">${alphaTable(task.key, task.type)}</div>`:''}
+      </div>
+      <input class="answer-input ${correct?'correct':wrong?'wrong':''}" type="text" id="ansInput"
+        placeholder="${task.type==='key'?'Schlüssel eingeben (z.B. 3) …':'Antwort eingeben …'}"
+        value="${inputVal}" ${answered?'readonly':''} maxlength="${task.type==='key'?2:20}">`;
+  }
+
+  const feedbackHtml = (correct || wrong) ? `
+    <div class="feedback ${correct?'success':'error'}">
+      ${correct ? '🎉 Perfekt! Das war richtig!' : '🤔 Nicht ganz – schau dir den Tipp an und versuche es nochmal!'}
+    </div>` : '';
+
+  app.innerHTML = `
+    <div class="progress-bar">
+      ${TASKS.map((_,i)=>`<div class="seg ${i<current?'done':i===current?'current':''}"></div>`).join('')}
+    </div>
+    <div class="card">
+      <div class="task-num">${task.num}</div>
+      <div class="task-title">${task.title}</div>
+      <div class="task-intro">${task.intro}</div>
+      ${body}
+      <div class="btn-row">
+        ${task.type==='tool'
+          ? `<button class="btn primary" onclick="checkTool()">Fertig ✓</button>`
+          : (!answered ? `<button class="btn primary" onclick="checkAnswer()">Prüfen</button>` : '')}
+        ${!answered ? `<button class="btn" onclick="toggleHint()">💡 Tipp</button>` : ''}
+        ${(answered || (task.type==='tool' && (correct||wrong))) ? `<button class="btn primary" onclick="nextTask()">Weiter →</button>` : ''}
+      </div>
+      ${feedbackHtml}
+    </div>`;
+
+  if (task.type === 'tool') {
+    const slider = document.getElementById('kSlider');
+    const wordEl = document.getElementById('toolWord');
+    const ansEl = document.getElementById('toolAns');
+    if (slider) slider.oninput = () => {
+      toolKey = +slider.value;
+      document.getElementById('kVal').textContent = toolKey;
+      document.getElementById('encOut').textContent = shift(toolWord.replace(/[^A-Za-z]/g,'') || '', toolKey) || '—';
+    };
+    if (wordEl) wordEl.oninput = () => {
+      toolWord = wordEl.value.toUpperCase();
+      wordEl.value = toolWord;
+      document.getElementById('encOut').textContent = shift(toolWord.replace(/[^A-Za-z]/g,''), toolKey) || '—';
+    };
+    if (ansEl) ansEl.oninput = () => { inputVal = ansEl.value.toUpperCase(); ansEl.value = inputVal; };
+  } else {
+    const inp = document.getElementById('ansInput');
+    if (inp) {
+      inp.oninput = () => { inputVal = inp.value.toUpperCase(); inp.value = inputVal; };
+      inp.onkeydown = (e) => { if(e.key==='Enter' && !answered) checkAnswer(); };
+      setTimeout(()=>inp.focus(), 50);
+    }
+  }
+}
+
+function toggleHint() { showHint = !showHint; render(); }
+
+function checkAnswer() {
+  const inp = document.getElementById('ansInput');
+  if (!inp) return;
+  inputVal = inp.value.trim().toUpperCase();
+  scores[current] = inputVal === TASKS[current].answer;
+  answered = true; showHint = true;
+  render();
+}
+
+function checkTool() {
+  const ansEl = document.getElementById('toolAns');
+  if (!ansEl) return;
+  inputVal = ansEl.value.trim().toUpperCase();
+  const expected = shift(toolWord.replace(/[^A-Za-z]/g,''), toolKey);
+  scores[current] = !!(inputVal && inputVal === expected);
+  answered = true;
+  render();
+}
+
+function nextTask() {
+  current++; answered = false; inputVal = ''; showHint = false;
+  render();
+}
+
+function renderResult() {
+  const app = document.getElementById('app');
+  const total = scores.filter(Boolean).length;
+  const pct = Math.round((total / TASKS.length) * 100);
+  const great = total >= 4;
+  const medal = total === 5 ? '🏅' : total >= 3 ? '⭐' : '📚';
+  const verdict = great ? 'Du warst toll!' : 'Du musst noch weiter daran arbeiten!';
+  const desc = great
+    ? `${total} von ${TASKS.length} Aufgaben korrekt – du hast die Caesar-Verschlüsselung verstanden!`
+    : `${total} von ${TASKS.length} Aufgaben korrekt – übe die Caesar-Verschiebung noch einmal und frag deinen Lehrer!`;
+  const rows = TASKS.map((t,i) => {
+    const ok = scores[i] === true;
+    return `<div class="result-row"><span>${t.title}</span><span class="${ok?'ok':'nok'}">${ok?'✓ Richtig':'✗ Falsch'}</span></div>`;
+  }).join('');
+  const pageUrl = window.location.href.split('?')[0].split('#')[0];
+
+  app.innerHTML = `
+    <div class="card result-screen">
+      <div class="result-icon">${medal}</div>
+      <div class="result-score">${pct}%</div>
+      <div class="result-sub">${total} von ${TASKS.length} Aufgaben richtig</div>
+      <div class="result-verdict ${great?'great':'keep'}">${verdict}</div>
+      <div class="result-desc">${desc}</div>
+      <div class="result-list">${rows}</div>
+      <button class="btn primary" style="width:100%;margin-bottom:0" onclick="restart()">Nochmal spielen 🔄</button>
+    </div>
+    <div class="share-card">
+      <div class="share-label">Link &amp; QR-Code für Schüler/innen</div>
+      <div style="display:flex;gap:1.25rem;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1;min-width:150px;">
+          <div style="font-size:13px;color:var(--text3);margin-bottom:8px;line-height:1.6;">Klicken zum Kopieren:</div>
+          <div class="share-url" id="shareUrlBox" onclick="copyUrl()">${pageUrl}</div>
+          <div class="copy-hint" id="copyHint">Klicken zum Kopieren</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="share-label" style="margin-bottom:6px;">Scan mich!</div>
+          <div class="qr-wrap" id="qrcode"></div>
+        </div>
+      </div>
+    </div>`;
+
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(document.getElementById('qrcode'), {
+      text: pageUrl,
+      width: 128,
+      height: 128,
+      colorDark: '#111827',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+}
+
+function copyUrl() {
+  const url = document.getElementById('shareUrlBox').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const hint = document.getElementById('copyHint');
+    hint.textContent = '✓ Link kopiert!';
+    hint.classList.add('show');
+    setTimeout(() => { hint.textContent = 'Klicken zum Kopieren'; hint.classList.remove('show'); }, 2000);
+  });
+}
+
+function restart() {
+  current = 0; scores = []; answered = false; inputVal = '';
+  showHint = false; toolWord = ''; toolKey = 3;
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
