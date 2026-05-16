@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔐 Cäsar-Verschlüsselung – Das Spiel</title>
+<style>
+:root{--g:#5a8a2f;--gl:#8ab84a;--gb:#e8f4d4;--w:#fff;--d:#2c2c2c;--r:#e74c3c;--y:#f1c40f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#e8f4d4,#c8e6a0);min-height:100vh;color:var(--d)}
+header{background:var(--g);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 3px 12px rgba(0,0,0,.25);position:sticky;top:0;z-index:100}
+header h1{font-size:1.25em;font-weight:900;letter-spacing:.5px}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.pb-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.pb-label{font-size:.72em;opacity:.8}
+.pb-outer{background:rgba(255,255,255,.3);border-radius:10px;height:10px;width:160px;overflow:hidden}
+.pb-inner{height:100%;background:#c8e62a;border-radius:10px;transition:width .5s ease;width:0%}
+.score-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:5px 12px;font-weight:700;font-size:1.05em}
+.container{max-width:820px;margin:28px auto;padding:0 16px 40px}
+.card{background:#fff;border-radius:14px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.10);animation:fadeUp .35s ease;margin-bottom:16px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.card-title{color:var(--g);font-size:1.35em;font-weight:800;padding-bottom:10px;border-bottom:3px solid var(--gb);margin-bottom:16px}
+.info-box{background:var(--gb);border-left:4px solid var(--g);padding:14px 16px;border-radius:0 8px 8px 0;margin:14px 0;line-height:1.6}
+.task-box{background:#f0fce8;border:2px solid var(--gl);border-radius:8px;padding:14px 16px;margin:14px 0;line-height:1.6}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;border-radius:8px;border:none;cursor:pointer;font-size:.97em;font-weight:700;transition:all .18s ease}
+.btn-g{background:var(--g);color:#fff}.btn-g:hover{background:#4a7a20;transform:translateY(-2px)}
+.btn-g:disabled{background:#aaa;cursor:not-allowed;transform:none}
+.btn-o{background:transparent;border:2px solid var(--g);color:var(--g)}.btn-o:hover{background:var(--gb)}
+.nav{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;flex-wrap:wrap}
+.section{display:none}.section.active{display:block}
+/* Theory quiz */
+.q-counter{color:#888;font-size:.85em;margin-bottom:6px}
+.q-text{font-weight:700;font-size:1.05em;margin-bottom:12px;line-height:1.4}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.choice{padding:11px 13px;border-radius:8px;border:2px solid #ddd;cursor:pointer;background:#fff;text-align:left;font-size:.93em;transition:all .18s;line-height:1.4}
+.choice:hover:not(:disabled){border-color:var(--gl);background:var(--gb)}
+.choice.ok{border-color:#27ae60;background:#d5f5e3;color:#1a7a40;font-weight:700}
+.choice.no{border-color:var(--r);background:#fde8e8;color:var(--r)}
+hr.divider{border:none;border-top:2px solid #f0f0f0;margin:22px 0}
+/* Feedback */
+.fb{padding:11px 14px;border-radius:8px;margin:10px 0;font-weight:600;display:none;line-height:1.4}
+.fb.ok{background:#d5f5e3;color:#1a7a40;border:2px solid #27ae60;display:block}
+.fb.no{background:#fde8e8;color:var(--r);border:2px solid var(--r);display:block}
+.fb.hint{background:#fff8e1;color:#856404;border:2px solid var(--y);display:block}
+/* Caesar wheel */
+.wheel-wrap{display:flex;flex-direction:column;align-items:center;margin:18px 0}
+.wheel-ctrl{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.wbtn{width:40px;height:40px;border-radius:50%;border:none;background:var(--g);color:#fff;font-size:1.4em;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;font-weight:700}
+.wbtn:hover{background:#4a7a20;transform:scale(1.1)}
+.key-tag{background:var(--gb);border:2px solid var(--g);border-radius:8px;padding:7px 18px;font-weight:700;color:var(--g);font-size:1.1em}
+.decode-preview{font-family:monospace;font-size:1.4em;letter-spacing:3px;text-align:center;padding:14px;background:#f8f8f8;border-radius:8px;border:2px solid #ddd;margin:12px 0;min-height:52px;transition:all .3s}
+.decode-preview.found{background:#d5f5e3;border-color:#27ae60;color:#1a7a40;font-weight:700;animation:pulse .5s ease}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+/* Inputs */
+.ans-inp{width:100%;padding:11px 14px;font-size:1.05em;border-radius:8px;border:2px solid #ddd;outline:none;font-family:monospace;letter-spacing:1px;transition:border-color .2s;margin-top:8px}
+.ans-inp:focus{border-color:var(--g)}.ans-inp.ok{border-color:#27ae60;background:#d5f5e3}
+.ans-inp.no{border-color:var(--r);background:#fde8e8}
+/* Alphabet table */
+.alpha-tbl{width:100%;border-collapse:collapse;font-family:monospace;font-size:.85em;margin:12px 0;overflow-x:auto;display:block}
+.alpha-tbl th,.alpha-tbl td{border:1px solid #ddd;padding:5px;text-align:center;min-width:26px}
+.alpha-tbl th{background:var(--g);color:#fff}
+.alpha-tbl .hl{background:#fff3cd;font-weight:700}
+/* Cipher text display */
+.cipher-disp{font-family:monospace;font-size:1.35em;letter-spacing:3px;background:#f5f5f5;padding:12px 18px;border-radius:8px;border:2px solid #ddd;text-align:center;margin:14px 0;font-weight:700}
+/* Postcard */
+.postcard{border:3px solid #8B7355;border-radius:10px;overflow:hidden;margin:16px 0;font-family:Georgia,serif}
+.pc-head{background:#8B7355;color:#fff;padding:7px 14px;font-size:.88em;display:flex;align-items:center;gap:8px}
+.pc-body{display:grid;grid-template-columns:1fr 220px;background:#fffef0}
+.pc-left{padding:14px 16px;border-right:2px dashed #8B7355}
+.pc-right{padding:14px;font-size:.88em;line-height:1.8}
+.pc-line{font-family:monospace;background:#f5f5f5;padding:5px 10px;border-radius:4px;font-size:.9em;margin:5px 0;letter-spacing:1px}
+.pts{display:inline-block;background:var(--g);color:#fff;padding:3px 10px;border-radius:20px;font-size:.82em;font-weight:700;margin-left:8px;vertical-align:middle}
+/* Completion */
+#section-done{text-align:center;padding:20px 0}
+.big-score{font-size:7em;font-weight:900;line-height:1;text-shadow:4px 4px 0 rgba(0,0,0,.08);animation:scoreIn .6s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes scoreIn{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes dancerIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.done-title{font-size:1.8em;font-weight:800;margin:16px 0 6px;color:var(--g)}
+.stars-row{font-size:2.5em;margin:8px 0}
+.threshold-badge{display:inline-block;background:var(--g);color:#fff;border-radius:12px;padding:8px 20px;font-size:.95em;font-weight:700;margin:12px 0}
+/* Confetti */
+#cfd{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
+.cp{position:absolute;top:-14px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(720deg);opacity:0}}
+@media(max-width:600px){
+  .choices{grid-template-columns:1fr}
+  .pc-body{grid-template-columns:1fr}
+  .pc-right{border-top:2px dashed #8B7355}
+  header h1{font-size:1em}
+  .big-score{font-size:5em}
+}
+</style>
+</head>
+<body>
+<div id="cfd"></div>
+<header>
+  <h1>🔐 Cäsar-Verschlüsselung</h1>
+  <div class="hdr-right">
+    <div class="pb-wrap">
+      <div class="pb-label">Fortschritt</div>
+      <div class="pb-outer"><div class="pb-inner" id="pb"></div></div>
+    </div>
+    <div class="score-badge"><span id="sc">0</span> Pts</div>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- INTRO -->
+<div class="section active" id="section-intro">
+<div class="card">
+  <div class="card-title">🏛️ Willkommen zum Cäsar-Spiel!</div>
+  <div class="info-box">
+    <strong>Was ist die Cäsar-Chiffre?</strong><br>
+    Bereits vor mehreren tausend Jahren haben Menschen überlegt, wie sie Nachrichten verschlüsseln können.
+    Julius Cäsar nutzte eine einfache aber clevere Methode: Das Alphabet wird um eine bestimmte Anzahl an Stellen verschoben.<br><br>
+    Beispiel mit Schlüssel <strong>5</strong>: A→F, B→G, H→M, HALLO→MFQQT
+  </div>
+  <div class="task-box">
+    <strong>📋 So funktioniert das Spiel:</strong><br>
+    Du durchläufst <strong>6 Level</strong> – von Theorie-Quiz bis zum echten Codeknacken!<br><br>
+    🏅 Ab <strong>67 von 100 Punkten</strong> bist du ein echter Code-Knacker!<br>
+    🎉 Bei Erfolg gibt es Konfetti-Regen!
+  </div>
+  <div class="nav"><button class="btn btn-g" onclick="show('section-theory')">Los geht's! →</button></div>
+</div>
+</div>
+
+<!-- LEVEL 1: THEORY -->
+<div class="section" id="section-theory">
+<div class="card">
+  <div class="card-title">📚 Level 1: Theorie-Quiz <span class="pts">20 Punkte</span></div>
+  <div id="theory-container"></div>
+</div>
+</div>
+
+<!-- LEVEL 2: DECODE WITH WHEEL -->
+<div class="section" id="section-decode">
+<div class="card">
+  <div class="card-title">🔓 Level 2: Nachricht entschlüsseln <span class="pts">15 Punkte</span></div>
+  <div class="task-box">
+    Entschlüssele diese Nachricht mit der Cäsar-Scheibe.<br>
+    Tipp: Der Schlüssel ist <strong>5</strong> → das <strong>A</strong> (echtes Alphabet) steht über dem <strong>F</strong> (geheimes Alphabet).
+  </div>
+  <div class="cipher-disp">Iz gnxy xhmqfz!</div>
+  <div class="wheel-wrap">
+    <div class="wheel-ctrl">
+      <button class="wbtn" onclick="spin(-1)">−</button>
+      <div class="key-tag">Schlüssel: <span id="wkey">0</span></div>
+      <button class="wbtn" onclick="spin(1)">+</button>
+    </div>
+    <svg id="wheel-svg" width="280" height="280"></svg>
+  </div>
+  <div><strong>Live-Vorschau (Entschlüsselung):</strong></div>
+  <div class="decode-preview" id="dec-preview">–</div>
+  <div class="fb" id="dec-fb"></div>
+  <div class="nav">
+    <button class="btn btn-o" onclick="hint('dec')">💡 Hinweis</button>
+    <button class="btn btn-g" id="dec-next" disabled onclick="show('section-encode')">Weiter →</button>
+  </div>
+</div>
+</div>
+
+<!-- LEVEL 3: ENCODE -->
+<div class="section" id="section-encode">
+<div class="card">
+  <div class="card-title">🔒 Level 3: Nachricht verschlüsseln <span class="pts">15 Punkte</span></div>
+  <div class="task-box">
+    Verschlüssele diese Nachricht mit dem Schlüssel <strong>5</strong>.<br>
+    Benutze die Tabelle unten als Hilfe!
+  </div>
+  <div class="cipher-disp">Krypto ist cool.</div>
+  <div><strong>Alphabet-Tabelle (Schlüssel 5):</strong></div>
+  <div style="overflow-x:auto"><div id="alpha-tbl5"></div></div>
+  <div style="margin-top:14px"><label><strong>Deine Verschlüsselung:</strong></label>
+  <input class="ans-inp" id="enc-inp" placeholder="Verschlüsselter Text..."></div>
+  <div class="fb" id="enc-fb"></div>
+  <div class="nav">
+    <button class="btn btn-o" onclick="hint('enc')">💡 Hinweis</button>
+    <button class="btn btn-o" id="enc-check" onclick="chkEnc()">✅ Prüfen</button>
+    <button class="btn btn-g" id="enc-next" disabled onclick="show('section-pc1')">Weiter →</button>
+  </div>
+</div>
+</div>
+
+<!-- LEVEL 4: POSTCARD I -->
+<div class="section" id="section-pc1">
+<div class="card">
+  <div class="card-title">📮 Level 4: Postkarte entschlüsseln I <span class="pts">15 Punkte</span></div>
+  <div class="task-box">Entschlüssele diese Postkarte. Der geheime Schlüssel ist <strong>3</strong>.</div>
+  <div class="postcard">
+    <div class="pc-head">📮 Postkarte · Schlüssel = 3 · A→D, B→E, C→F …</div>
+    <div class="pc-body">
+      <div class="pc-left">
+        <p><em>Hallo Tina,</em></p>
+        <p><em>herzliche Grüße aus</em> <strong>Hqjodqg</strong>.</p>
+        <div class="pc-line">Klhxuhjqhw hvriw.</div>
+        <div class="pc-line">Wurwcghpkdehq zlu Vsdvv.</div>
+        <p style="margin-top:8px"><em>Bis bald. &lt;3</em></p>
+        <p style="margin-top:6px">Absender: <strong>Dqqd</strong></p>
+      </div>
+      <div class="pc-right">
+        <strong>Tina Müller</strong><br>Hauptstraße 3<br>12345 Kleinstadt<br>Deutschland<br>
+        <div style="margin-top:12px;font-size:.82em;color:#777">🔑 key=3 → H-3=E, q-3=n…</div>
+      </div>
+    </div>
+  </div>
+  <label><strong>Woher kommt die Postkarte?</strong> (entschlüssele „Hqjodqg")</label>
+  <input class="ans-inp" id="pc1-inp" placeholder="Land eingeben...">
+  <div class="fb" id="pc1-fb"></div>
+  <div class="nav">
+    <button class="btn btn-o" onclick="hint('pc1')">💡 Hinweis</button>
+    <button class="btn btn-o" id="pc1-check" onclick="chkPc1()">✅ Prüfen</button>
+    <button class="btn btn-g" id="pc1-next" disabled onclick="show('section-pc2')">Weiter →</button>
+  </div>
+</div>
+</div>
+
+<!-- LEVEL 5: POSTCARD II -->
+<div class="section" id="section-pc2">
+<div class="card">
+  <div class="card-title">📮 Level 5: Postkarte entschlüsseln II <span class="pts">15 Punkte</span></div>
+  <div class="task-box">Entschlüssele diese Postkarte. Der geheime Schlüssel ist <strong>7</strong>.</div>
+  <div class="postcard">
+    <div class="pc-head">📮 Postkarte · Schlüssel = 7 · A→H, B→I, C→J …</div>
+    <div class="pc-body">
+      <div class="pc-left">
+        <p><em>Hallo Mario,</em></p>
+        <p><em>herzliche Grüße aus</em> <strong>Zwhuply</strong>.</p>
+        <div class="pc-line">Khz Dlaalу pzazbwly.</div>
+        <div class="pc-line">Lzpzaavah s avssopley.</div>
+        <p style="margin-top:8px"><em>Bis bald. &lt;3</em></p>
+        <p style="margin-top:6px">Absender: <strong>Lch</strong></p>
+      </div>
+      <div class="pc-right">
+        <strong>Mario Rau</strong><br>Nebenstraße 7<br>54321 Großstadt<br>Deutschland<br>
+        <div style="margin-top:12px;font-size:.82em;color:#777">🔑 key=7 → Z-7=S, w-7=p…</div>
+      </div>
+    </div>
+  </div>
+  <label><strong>Woher kommt die Postkarte?</strong> (entschlüssele „Zwhuply")</label>
+  <input class="ans-inp" id="pc2-inp" placeholder="Land eingeben...">
+  <div class="fb" id="pc2-fb"></div>
+  <div class="nav">
+    <button class="btn btn-o" onclick="hint('pc2')">💡 Hinweis</button>
+    <button class="btn btn-o" id="pc2-check" onclick="chkPc2()">✅ Prüfen</button>
+    <button class="btn btn-g" id="pc2-next" disabled onclick="show('section-pc3')">Weiter →</button>
+  </div>
+</div>
+</div>
+
+<!-- LEVEL 6: MYSTERY KEY -->
+<div class="section" id="section-pc3">
+<div class="card">
+  <div class="card-title">🕵️ Level 6: Schlüssel knacken! <span class="pts">20 Punkte</span></div>
+  <div class="task-box">
+    Der Schlüssel ist <strong>unbekannt</strong>! Probiere verschiedene Schlüssel aus.<br>
+    💡 Tipp: Im Deutschen kommt <strong>E</strong> am häufigsten vor. Welcher Buchstabe erscheint im Geheimtext am häufigsten?
+  </div>
+  <div class="postcard">
+    <div class="pc-head">📮 Postkarte · Schlüssel = ??? </div>
+    <div class="pc-body">
+      <div class="pc-left">
+        <p><em>Hallo Nina,</em></p>
+        <p><em>herzliche Grüße aus</em> <strong>S-apcs</strong>.</p>
+        <div class="pc-line">Ojwpjhtxhi</div>
+        <div class="pc-line">thxbbtg cdrwpb</div>
+        <div class="pc-line">hrwdtchitc!</div>
+        <p style="margin-top:8px"><em>Bis bald. &lt;3</em></p>
+        <p style="margin-top:6px">Absender: <strong>Psp</strong></p>
+      </div>
+      <div class="pc-right">
+        <strong>Nina Pat</strong><br>Mühle 15<br>45893 Essen<br>Deutschland
+      </div>
+    </div>
+  </div>
+
+  <div id="pc3-wheel-section">
+    <div><strong>Schlüssel ausprobieren (1–25):</strong></div>
+    <div class="wheel-wrap">
+      <div class="wheel-ctrl">
+        <button class="wbtn" onclick="spin3(-1)">−</button>
+        <div class="key-tag">Schlüssel: <span id="wkey3">1</span></div>
+        <button class="wbtn" onclick="spin3(1)">+</button>
+      </div>
+      <svg id="wheel-svg3" width="240" height="240"></svg>
+    </div>
+    <div><strong>Live-Vorschau (erste Zeile „S-apcs"):</strong></div>
+    <div class="decode-preview" id="pc3-preview">–</div>
+  </div>
+
+  <label><strong>Was ist der Schlüssel?</strong></label>
+  <input class="ans-inp" id="pc3-key" type="number" min="1" max="25" placeholder="Schlüssel (1–25)..." oninput="chkPc3Key()" style="max-width:200px">
+  <div class="fb" id="pc3-key-fb"></div>
+
+  <div id="pc3-name-sec" style="display:none;margin-top:16px">
+    <label><strong>Von wem ist die Postkarte?</strong> (entschlüssele „Psp")</label>
+    <input class="ans-inp" id="pc3-name" placeholder="Name des Absenders..." oninput="chkPc3Name()" style="max-width:250px">
+    <div class="fb" id="pc3-name-fb"></div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-o" onclick="hint('pc3')">💡 Hinweis</button>
+    <button class="btn btn-g" id="pc3-next" disabled onclick="finish()">🎉 Abschließen!</button>
+  </div>
+</div>
+</div>
+
+<!-- DONE -->
+<div class="section" id="section-done">
+<div id="dancer" style="display:none;position:fixed;bottom:0;right:30px;z-index:500;pointer-events:none;animation:dancerIn .5s cubic-bezier(.34,1.56,.64,1) both">
+  <img src="giphy.gif" alt="tanzende Figur" style="height:300px;width:auto;display:block">
+</div>
+<div class="card" style="text-align:center;padding:36px 24px">
+  <div class="big-score" id="final-num" style="color:#5a8a2f">0</div>
+  <div class="done-title" id="done-title">Glückwunsch!</div>
+  <div class="stars-row" id="done-stars">⭐</div>
+  <div class="threshold-badge" id="done-badge">0 / 100 Punkte</div>
+  <div id="done-msg" style="color:#555;margin:12px 0;font-size:.97em;line-height:1.6"></div>
+  <div style="background:#f8f8f8;border-radius:10px;padding:18px;margin:18px 0;text-align:left">
+    <strong>Was du gelernt hast:</strong>
+    <ul style="margin:10px 0 0 18px;line-height:2.1">
+      <li>Die Cäsar-Chiffre verschlüsselt durch Alphabetverschiebung</li>
+      <li>Mit dem richtigen Schlüssel lässt sich jede Nachricht entschlüsseln</li>
+      <li>Häufigkeitsanalyse hilft beim Knacken unbekannter Schlüssel</li>
+      <li>Datenverschlüsselung ist heute wichtiger denn je!</li>
+    </ul>
+  </div>
+  <button class="btn btn-g" onclick="restart()" style="font-size:1.05em;padding:14px 28px">🔄 Nochmal spielen</button>
+</div>
+</div>
+
+</div><!-- /container -->
+
+<script>
+// ── State ──────────────────────────────────────────────────
+let score = 0;
+let wKey = 0, wKey3 = 1;
+let decDone=false, encDone=false, pc1Done=false, pc2Done=false, pc3kDone=false, pc3nDone=false;
+let theoryDone = [false,false,false,false];
+
+const L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const SECTIONS = ['section-intro','section-theory','section-decode','section-encode',
+                  'section-pc1','section-pc2','section-pc3','section-done'];
+
+// ── Caesar ─────────────────────────────────────────────────
+function enc(t,k){return t.split('').map(c=>{const n=c.charCodeAt(0);if(n>=65&&n<=90)return L[(n-65+k)%26];if(n>=97&&n<=122)return L[(n-97+k)%26].toLowerCase();return c}).join('')}
+function dec(t,k){return enc(t,(26-(k%26))%26)}
+function norm(s){return s.toLowerCase().replace(/[^a-z]/g,'')}
+
+// ── Navigation ─────────────────────────────────────────────
+function show(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx=SECTIONS.indexOf(id);
+  document.getElementById('pb').style.width=(idx/(SECTIONS.length-1)*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function addScore(pts){score+=pts;document.getElementById('sc').textContent=score}
+
+// ── Wheel SVG ──────────────────────────────────────────────
+function drawWheel(svgId, key, size){
+  const s=size||280, cx=s/2, cy=s/2, oR=s*.44, iR=s*.31;
+  let svg=`<defs><filter id="ds"><feDropShadow dx="1" dy="2" stdDeviation="3" flood-opacity=".18"/></filter></defs>`;
+  // outer bg
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${oR+14}" fill="#2c2c2c" filter="url(#ds)"/>`;
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${oR+1}" fill="#444"/>`;
+  // outer letters (plaintext)
+  for(let i=0;i<26;i++){
+    const a=(i*360/26-90)*Math.PI/180;
+    const r=oR+7, x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+    const rot=i*360/26;
+    svg+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot},${x},${y})" fill="white" font-size="${s*.042}" font-weight="bold" font-family="Arial">${L[i]}</text>`;
+  }
+  // inner disk
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${iR+2}" fill="#ddd"/>`;
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${iR-8}" fill="#ccc"/>`;
+  // inner letters (ciphertext, shifted)
+  for(let i=0;i<26;i++){
+    const shifted=(i+key)%26;
+    const a=(i*360/26-90)*Math.PI/180;
+    const r=iR-4, x=cx+r*Math.cos(a), y=cy+r*Math.sin(a);
+    const rot=i*360/26;
+    const hi=(i===0);
+    svg+=`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rot},${x},${y})" fill="${hi?'#c0392b':'#333'}" font-size="${s*.038}" font-weight="${hi?'bold':'normal'}" font-family="Arial">${L[shifted]}</text>`;
+  }
+  // center
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${s*.07}" fill="#5a8a2f"/>`;
+  svg+=`<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="${s*.038}" font-weight="bold" font-family="Arial">=${key}</text>`;
+  // top marker
+  const mx=cx, my=cy-oR-14;
+  svg+=`<polygon points="${mx-5},${my-6} ${mx+5},${my-6} ${mx},${my+2}" fill="#f1c40f"/>`;
+  document.getElementById(svgId).innerHTML=svg;
+}
+
+function spin(d){
+  wKey=((wKey+d)+26)%26;
+  document.getElementById('wkey').textContent=wKey;
+  drawWheel('wheel-svg',wKey,280);
+  updateDecPreview();
+}
+
+function spin3(d){
+  wKey3=((wKey3+d-1+25)%25)+1;
+  document.getElementById('wkey3').textContent=wKey3;
+  drawWheel('wheel-svg3',wKey3,240);
+  updatePc3Preview();
+}
+
+function updateDecPreview(){
+  if(decDone)return;
+  const cipher='Iz gnxy xhmqfz!';
+  const plain=dec(cipher,wKey);
+  const el=document.getElementById('dec-preview');
+  el.textContent=plain;
+  if(norm(plain)===norm('Du bist schlau!')){
+    el.className='decode-preview found';
+    if(!decDone){
+      decDone=true;
+      addScore(15);
+      const fb=document.getElementById('dec-fb');
+      fb.className='fb ok';
+      fb.textContent='✅ Genau! "Du bist schlau!" – Schlüssel 5 war richtig! +15 Punkte';
+      document.getElementById('dec-next').disabled=false;
+    }
+  } else {
+    el.className='decode-preview';
+  }
+}
+
+function updatePc3Preview(){
+  const plain=dec('S-apcs',wKey3);
+  document.getElementById('pc3-preview').textContent=plain;
+}
+
+// ── Alphabet table ──────────────────────────────────────────
+function buildAlphaTbl(key, id){
+  let r1='', r2='';
+  for(let i=0;i<26;i++){
+    r1+=`<td><strong>${L[i]}</strong></td>`;
+    r2+=`<td class="hl">${L[(i+key)%26]}</td>`;
+  }
+  document.getElementById(id).innerHTML=
+    `<table class="alpha-tbl"><tr><th>Klartext</th>${r1}</tr><tr><th style="background:#3a6a1f">Geheim</th>${r2}</tr></table>`;
+}
+
+// ── Level 1 Theory ──────────────────────────────────────────
+const QS=[
+  {q:'Was ist die Cäsar-Chiffre?',
+   o:['Ein Computervirus','Eine Verschlüsselung durch Verschieben des Alphabets','Ein soziales Netzwerk','Eine Programmiersprache'],c:1,p:5},
+  {q:'Schlüssel 3: Welcher Buchstabe verschlüsselt „A"?',
+   o:['A','C','D','E'],c:2,p:5},
+  {q:'Schlüssel 5: Welchen Klartext hat der Geheimbuchstabe „I"?',
+   o:['D','N','E','F'],c:0,p:5},
+  {q:'Warum ist Datenverschlüsselung heute besonders wichtig?',
+   o:['Weil Daten oft in der Cloud und über das Internet übertragen werden','Weil Passwörter veraltet sind','Weil Computer keine Passwörter mehr speichern','Weil Daten immer lokal bleiben'],c:0,p:5}
+];
+
+function initTheory(){
+  let html='';
+  QS.forEach((q,qi)=>{
+    html+=`<div class="q-counter">Frage ${qi+1} / ${QS.length} · ${q.p} Punkte</div>
+    <div class="q-text">${q.q}</div>
+    <div class="choices">`;
+    q.o.forEach((opt,oi)=>{
+      html+=`<button class="choice" id="ch-${qi}-${oi}" onclick="pick(${qi},${oi})">${opt}</button>`;
+    });
+    html+=`</div><div class="fb" id="qfb-${qi}"></div>`;
+    if(qi<QS.length-1)html+='<hr class="divider">';
+  });
+  html+=`<div class="nav"><button class="btn btn-g" id="th-next" disabled onclick="show('section-decode')">Weiter →</button></div>`;
+  document.getElementById('theory-container').innerHTML=html;
+}
+
+function pick(qi,oi){
+  if(theoryDone[qi])return;
+  theoryDone[qi]=true;
+  const q=QS[qi];
+  q.o.forEach((_,i)=>{
+    const b=document.getElementById(`ch-${qi}-${i}`);
+    b.disabled=true;
+    if(i===q.c)b.classList.add('ok');
+    else if(i===oi)b.classList.add('no');
+  });
+  const fb=document.getElementById(`qfb-${qi}`);
+  if(oi===q.c){fb.className='fb ok';fb.textContent=`✅ Richtig! +${q.p} Punkte`;addScore(q.p);}
+  else{fb.className='fb no';fb.textContent='❌ Leider falsch – die richtige Antwort ist grün markiert.';}
+  if(theoryDone.every(Boolean))document.getElementById('th-next').disabled=false;
+}
+
+// ── Level 3 Encode ──────────────────────────────────────────
+function chkEnc(){
+  if(encDone)return;
+  const v=norm(document.getElementById('enc-inp').value);
+  const ok=norm('Pwduyt nxy httq');
+  const fb=document.getElementById('enc-fb');
+  const inp=document.getElementById('enc-inp');
+  const checkBtn=document.getElementById('enc-check');
+  encDone=true;
+  checkBtn.disabled=true;
+  document.getElementById('enc-next').disabled=false;
+  if(v===ok){
+    inp.className='ans-inp ok';
+    fb.className='fb ok';
+    fb.textContent='✅ Perfekt! "Pwduyt nxy httq" ist korrekt! +15 Punkte';
+    addScore(15);
+  } else {
+    inp.className='ans-inp no';
+    fb.className='fb no';
+    fb.innerHTML='❌ Nicht ganz – die richtige Antwort ist: <strong>Pwduyt nxy httq</strong><br>Kein Problem, du kannst trotzdem weitermachen!';
+  }
+}
+
+// ── Level 4 Postcard I ──────────────────────────────────────
+function chkPc1(){
+  if(pc1Done)return;
+  pc1Done=true;
+  document.getElementById('pc1-check').disabled=true;
+  document.getElementById('pc1-next').disabled=false;
+  const v=norm(document.getElementById('pc1-inp').value);
+  const inp=document.getElementById('pc1-inp');
+  const fb=document.getElementById('pc1-fb');
+  if(v==='england'){
+    inp.className='ans-inp ok';
+    fb.className='fb ok';
+    fb.textContent='✅ Richtig! Die Postkarte kommt aus England! +15 Punkte';
+    addScore(15);
+  } else {
+    inp.className='ans-inp no';
+    fb.className='fb no';
+    fb.innerHTML='❌ Nicht ganz – die richtige Antwort ist: <strong>England</strong><br>Kein Problem, du kannst trotzdem weitermachen!';
+  }
+}
+
+// ── Level 5 Postcard II ─────────────────────────────────────
+function chkPc2(){
+  if(pc2Done)return;
+  pc2Done=true;
+  document.getElementById('pc2-check').disabled=true;
+  document.getElementById('pc2-next').disabled=false;
+  const v=norm(document.getElementById('pc2-inp').value);
+  const inp=document.getElementById('pc2-inp');
+  const fb=document.getElementById('pc2-fb');
+  if(v==='spanien'){
+    inp.className='ans-inp ok';
+    fb.className='fb ok';
+    fb.textContent='✅ Richtig! Die Postkarte kommt aus Spanien! +15 Punkte';
+    addScore(15);
+  } else {
+    inp.className='ans-inp no';
+    fb.className='fb no';
+    fb.innerHTML='❌ Nicht ganz – die richtige Antwort ist: <strong>Spanien</strong><br>Kein Problem, du kannst trotzdem weitermachen!';
+  }
+}
+
+// ── Level 6 Mystery key ─────────────────────────────────────
+function chkPc3Key(){
+  if(pc3kDone)return;
+  const v=parseInt(document.getElementById('pc3-key').value);
+  const fb=document.getElementById('pc3-key-fb');
+  if(v===15){
+    document.getElementById('pc3-key').className='ans-inp ok';
+    fb.className='fb ok';fb.textContent='✅ Richtig! Der Schlüssel ist 15! +10 Punkte. Jetzt den Absender entschlüsseln!';
+    pc3kDone=true;addScore(10);
+    document.getElementById('pc3-name-sec').style.display='block';
+  } else if(!isNaN(v)&&v>=1&&v<=25){
+    const preview=dec('S-apcs',v);
+    fb.className='fb hint';
+    fb.textContent=`Bei Schlüssel ${v} ergibt „S-apcs" → „${preview}". Kein deutsches Wort. Probiere weiter!`;
+  }
+}
+
+function chkPc3Name(){
+  if(pc3nDone)return;
+  const v=norm(document.getElementById('pc3-name').value);
+  const fb=document.getElementById('pc3-name-fb');
+  if(v==='ada'){
+    document.getElementById('pc3-name').className='ans-inp ok';
+    fb.className='fb ok';fb.textContent='✅ Richtig! Die Postkarte ist von Ada! +10 Punkte';
+    pc3nDone=true;addScore(10);document.getElementById('pc3-next').disabled=false;
+  }
+}
+
+// ── Hints ───────────────────────────────────────────────────
+function hint(t){
+  const map={
+    dec:['dec-fb','💡 Drehe die Scheibe auf Schlüssel 5. Bei key=5 steht A über F. I im Geheimtext = D im Klartext.'],
+    enc:['enc-fb','💡 K+5=P, r+5=w, y+5=d, p+5=u, t+5=y, o+5=t → erste Silbe ist "Pwduyt"'],
+    pc1:['pc1-fb','💡 key=3: H-3=E, q-3=n, j-3=g, o-3=l, d-3=a, q-3=n, g-3=d → Ein bekanntes Nachbarland!'],
+    pc2:['pc2-fb','💡 key=7: Z-7=S, w-7=p, h-7=a, u-7=n, p-7=i, l-7=e, u-7=n → Sonniges Urlaubsland!'],
+    pc3:['pc3-key-fb','💡 Zähle die Buchstaben im Geheimtext. „h" kommt am häufigsten vor → h könnte E sein → h-E = 7, aber auch andere Differenzen möglich. Probiere Schlüssel 15!']
+  };
+  const [fbId,msg]=map[t];
+  const fb=document.getElementById(fbId);
+  fb.className='fb hint';fb.textContent=msg;
+}
+
+// ── Completion ──────────────────────────────────────────────
+function finish(){
+  show('section-done');
+  document.getElementById('dancer').style.display='block';
+  const n=document.getElementById('final-num');
+  n.textContent=score;
+  document.getElementById('done-badge').textContent=`${score} / 100 Punkte`;
+  if(score>=90){
+    n.style.color='#5a8a2f';
+    document.getElementById('done-title').textContent='🏆 Meister-Kryptograph!';
+    document.getElementById('done-stars').textContent='⭐⭐⭐';
+    document.getElementById('done-msg').textContent='Sensationell! Du hast fast alle Punkte erreicht und beherrschst die Cäsar-Verschlüsselung perfekt!';
+    confetti(200);
+  } else if(score>=67){
+    n.style.color='#5a8a2f';
+    document.getElementById('done-title').textContent='🎉 Echter Code-Knacker!';
+    document.getElementById('done-stars').textContent='⭐⭐';
+    document.getElementById('done-msg').textContent='Super! Du hast die magische 67-Punkte-Marke geknackt – du bist ein echter Code-Knacker!';
+    confetti(140);
+  } else {
+    n.style.color='#e67e22';
+    document.getElementById('done-title').textContent='👍 Gut gemacht!';
+    document.getElementById('done-stars').textContent='⭐';
+    document.getElementById('done-msg').textContent=`Du hast ${score} Punkte – für den Code-Knacker-Status brauchst du noch ${67-score} Punkte mehr. Versuche es nochmal!`;
+  }
+}
+
+// ── Confetti ────────────────────────────────────────────────
+function confetti(n){
+  const c=document.getElementById('cfd');
+  const colors=['#5a8a2f','#8ab84a','#ffd700','#ff6b6b','#74b9ff','#a29bfe','#fd79a8','#00cec9','#e17055'];
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const p=document.createElement('div');
+      p.className='cp';
+      const col=colors[Math.floor(Math.random()*colors.length)];
+      const sz=Math.random()*10+6;
+      const dur=Math.random()*3+2;
+      const del=Math.random()*2.5;
+      const left=Math.random()*100;
+      const round=Math.random()>.5;
+      p.style.cssText=`left:${left}%;width:${sz}px;height:${sz}px;background:${col};animation:fall ${dur}s ${del}s linear forwards;${round?'border-radius:50%':''}`;
+      c.appendChild(p);
+      setTimeout(()=>p.remove(),(dur+del)*1000+500);
+    },i*25);
+  }
+}
+
+// ── Restart ─────────────────────────────────────────────────
+function restart(){
+  document.getElementById('dancer').style.display='none';
+  score=0;wKey=0;wKey3=1;
+  decDone=encDone=pc1Done=pc2Done=pc3kDone=pc3nDone=false;
+  theoryDone=[false,false,false,false];
+  document.getElementById('sc').textContent='0';
+  ['enc-inp','pc1-inp','pc2-inp','pc3-key','pc3-name'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.value='';el.className='ans-inp';}
+  });
+  document.querySelectorAll('.fb').forEach(f=>f.className='fb');
+  ['dec-next','enc-next','pc1-next','pc2-next','pc3-next'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.disabled=true;
+  });
+  document.getElementById('pc3-name-sec').style.display='none';
+  document.getElementById('dec-preview').textContent='–';
+  document.getElementById('dec-preview').className='decode-preview';
+  document.getElementById('pc3-preview').textContent='–';
+  initTheory();
+  drawWheel('wheel-svg',0,280);
+  drawWheel('wheel-svg3',1,240);
+  document.getElementById('wkey').textContent='0';
+  document.getElementById('wkey3').textContent='1';
+  buildAlphaTbl(5,'alpha-tbl5');
+  show('section-intro');
+}
+
+// ── Init ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  initTheory();
+  drawWheel('wheel-svg',0,280);
+  drawWheel('wheel-svg3',1,240);
+  buildAlphaTbl(5,'alpha-tbl5');
+});
+</script>
+</body>
+</html>
